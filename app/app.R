@@ -4,6 +4,7 @@ library(bslib)
 library(plotly)
 library(ggplot2)
 library(data.table)
+library(stringr)
 
 #setwd("")
 
@@ -14,8 +15,27 @@ data_super <- as.data.frame(fread("/Users/vianaj/Desktop/projecto_precos/repo/ap
 data_super$data <- factor(format(as.Date(data_super$data, tryFormats = "%d.%m.%Y"), "%d/%m/%Y"), levels=unique(format(as.Date(data_super$data, tryFormats = "%d.%m.%Y"), "%d/%m/%Y")))
 
 
-data_super$colour <- "dark red"
-data_super$colour[which(data_super$supermercado=="Pingo_doce")]<-"dark blue"
+
+productos_df <-  as.data.frame(cbind(c("Todos", gsub("Ovos m 6", "Ovos M (6)", str_to_sentence(gsub("lata ", "", gsub("medio", "médio", gsub("oleo", "óleo", gsub("feijao", "feijão", gsub("grao", "grão", gsub("maca", "maçã", gsub("_", " ", unique(data_super$producto_1))))))))))), c("todos", unique(data_super$producto_1))))
+
+colnames(productos_df) <- c("labels", "producto_1")
+
+
+for(i in 1:nrow(productos_df)){
+    
+  if(productos_df$producto_1[i] %in% c("alface", "arroz_agulha", "atum_conserva", "banana", "bifes_frango", "bifinhos_lombo", "carapau_medio", "cebola", "cenoura", "esparguete", "iogurte_natural", "laranja", "lata_feijao_vermelho", "lata_grao", "maca_gala", "manteiga_magra", "queijo_flamengo", "tomate_redondo")){
+    
+    productos_df$labels[i] <- paste0(productos_df$labels[i], " (€/Kg)")
+    
+  }else{
+    
+    if(productos_df$producto_1[i] %in% c("azeite", "leite", "oleo_alimentar")){
+      
+      productos_df$labels[i] <- paste0(productos_df$labels[i], " (€/L)")
+    } else {
+    }
+  }  
+}
 
 
 ui <- navbarPage(
@@ -25,7 +45,7 @@ ui <- navbarPage(
   theme = bslib::bs_theme(version=4, bootswatch='minty'),
   
   tabPanel(
-    title = "Graficos",
+    title = "Gráficos",
     
     sidebarLayout(
       
@@ -40,14 +60,11 @@ ui <- navbarPage(
         ),
         
 
-#        hr(),
-#       p("Código disponível aqui") %>%
-#          a(
-#            href = 'https://www.business-science.io/',
-#            target = "_blank",
-#            class = "btn btn-lg btn-primary"
-#          ) %>%
-#          div(class = "text-center")
+    shiny::selectInput(
+      inputId='producto_1',
+      label='Seleccionar producto',
+      choices= productos_df$labels
+    )
         
         
       ),
@@ -75,7 +92,8 @@ server <- function(input, output){
     if(input$supermercado=='Ambos'){
       
       rv$data <- data_super
-
+      rv$max_eu <- max(na.omit(data_super$preco_euros))+1
+      
       
     }else{
       
